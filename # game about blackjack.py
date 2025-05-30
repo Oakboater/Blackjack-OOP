@@ -1,21 +1,21 @@
 # Rewrote the entire Blackjack code to clean up and work on
 import random 
-class DECK:
-    def __init__(self):
-        self.suit = ["♥", "♠", "♦", "♣"]
-        self.face = ["K", "Q", "J", "A"] + [str(n) for n in range(2, 11)]
-        # 52 cards, 13 cards each suit
-        self.cards = [f"{f}{s}" for s in self.suit for f in self.face]
-        random.shuffle(self.cards)
+class DECK:  
+    def __init__(self):  
+        self.reset()
 
-    def draw_card(self):
-        if self.cards:
-            return self.cards.pop()
-        else:
-            return None
+    def reset(self):  
+        self.suit = ["♥", "♠", "♦", "♣"]  
+        self.face = ["K", "Q", "J", "A"] + [str(n) for n in range(2, 11)]  
+        self.cards = [f"{f}{s}" for s in self.suit for f in self.face]  
+        random.shuffle(self.cards)  
 
-    def cards_left(self):
-        return len(self.cards)
+    def draw_card(self):  
+        if not self.cards:  
+            self.reset()  
+            print("\n--- DECK RESHUFFLED ---")  
+        return self.cards.pop()  
+
 
 deck = DECK()
 
@@ -31,6 +31,8 @@ class Cash:
 
     def get_balance(self):
         return self.amount
+     
+
     
 player_cash = Cash(100)
 print("Welcome to BlackJack.")
