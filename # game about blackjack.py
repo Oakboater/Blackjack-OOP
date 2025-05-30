@@ -1,96 +1,154 @@
-# game about blackjack
-import random
-# Cards
-
+# Rewrote the entire Blackjack code to clean up and work on
+import random 
 class DECK:
-    @staticmethod
-    def card_deal():
-        suits = ["♠", "♥", "♦", "♣"]
-        faces = ["A", "K", "Q", "J"] + list(range(2, 11))
-        return random.choice(suits), random.choice(faces)
-    
+    def __init__(self):
+        self.suit = ["♥", "♠", "♦", "♣"]
+        self.face = ["K", "Q", "J", "A"] + [str(n) for n in range(2, 11)]
+        # 52 cards, 13 cards each suit
+        self.cards = [f"{f}{s}" for s in self.suit for f in self.face]
+        random.shuffle(self.cards)
 
-
-
-# cash systems
-scash = 100
-
-# Saving cash system
-# Reset Cash systems
-# Cash input
-
-def game_start():   
-
-
-    gamblecash = int(input(f"Enter cash! You have {scash} cash: "))
-    suit, face = DECK.card_deal()
-    suit2, face2 = DECK.card_deal()
-    dealer_suit1, dealer_face1 = DECK.card_deal()
-    dealer_suit2, dealer_face2 = DECK.card_deal()
-    def get_card_value(face, current_total=0):
-        if face == "A":
-            # If adding 11 keeps us <= 21, use 11, else use 1
-            return 11 if current_total + 11 <= 21 else 1
-        elif face in ["K", "Q", "J"]:
-            return 10
+    def draw_card(self):
+        if self.cards:
+            return self.cards.pop()
         else:
-            pass
-            return int(face)
-        
-    print(f"Your cards: {suit} {face}, {suit2} {face2}")
-    userinputs = input("Would you like to hit or stand? (h/s) ")
-    # Check if the player wants to hit or stand 
-    total_value = face + face2
-    if userinputs.lower() == 'h':
-        # Player chooses to hit
-        new_suit, new_face = DECK.card_deal()
-        print(f"You drew {new_suit} {new_face}.")
-        # Update the player's hand value
-        new_value = get_card_value(new_face)
-        total_value += new_value
-        print(f"Your total value is now {total_value}.")
-    elif userinputs.lower() == 's':
-        # Player chooses to stand
-        print("You chose to stand.")
-    dealer_value1 = get_card_value(dealer_face1)
-    dealer_value2 = get_card_value(dealer_face2)
-    total_dealer = dealer_value1 + dealer_value2
-    newdealersuit = None
+            return None
 
-    while total_dealer <= 16:
-        newdealersui, newdealerface = DECK.card_deal()
-        print(f"Dealer hits and gets {newdealersuit} {newdealersuit}.")
-        dealer_value3 = get_card_value(newdealersuit)
-        total_dealer += dealer_value3
+    def cards_left(self):
+        return len(self.cards)
 
-    if total_dealer > 21:
-        print("Dealer busts! You win!")
-        dealerbust = True
-        scash += gamblecash
+deck = DECK()
 
-    elif total_dealer == total_value:
-        print("It's a tie!")
-        dealerbust = False
+class Cash:
+    def __init__(self, amount):
+        self.amount = amount
 
-    elif total_value > 21:
-        print("You bust! Dealer wins!")
-        scash -= gamblecash
+    def win(self, value):
+        self.amount += value
 
-    elif total_value > total_dealer:
-        print("You win!")
-        scash += gamblecash
+    def lose(self, value):
+        self.amount -= value
 
+    def get_balance(self):
+        return self.amount
+    
+player_cash = Cash(100)
+print("Welcome to BlackJack.")
+
+def gamestart():
+    while True:
+        try:
+            cash_input = int(input(f"How much would you like to bet? You have {player_cash.get_balance()}: "))
+            if 0 < cash_input <= player_cash.get_balance():
+                break
+            else:
+                print(f"Please enter a valid amount up to your balance ({player_cash.get_balance()}).")
+        except ValueError:
+            print("Please enter a valid number.")
+    card1 = deck.draw_card()
+    card2 = deck.draw_card()
+    print(f"Your starting cards are: {card1}, {card2}")
+    return [card1, card2], cash_input
+
+def dealer():
+    dcard1 = deck.draw_card()
+    dcard2 = deck.draw_card()
+    print(f"Dealer reveals a card, its {dcard1}")
+    return dcard1, dcard2
+
+
+def userinputs(current_cards):
+    while True:
+        try:
+            user_input = input("Would you like to (H)it or (S)tand? ").lower()
+            if user_input == "h":
+                new_card = deck.draw_card()
+                current_cards.append(new_card)
+                print(f"You have picked up a {new_card}. Your current cards are: {', '.join(current_cards)}")
+            elif user_input == "s":
+                print(f"You decided to stand with: {', '.join(current_cards)}")
+                break
+            else:
+                print("You have not selected a valid response")
+                userinputs(current_cards)
+        except Exception as e:
+            print("An error occurred:", e)
+            return current_cards
+def card_value(card):
+    face = card[:-1]
+    if face in ['K', 'Q', 'J']:
+        return 10
+    elif face == 'A':
+        return 11
     else:
-        print("Dealer wins!")
-        scash -= gamblecash
-    print(f"Your current cash is {scash}.")
+        return int(face)
 
-    gamerequest = input("Would you like to play again? (y/n) ")
-    if gamerequest.lower() == 'y':
-        game_start()
+def hand_value(cards):
+    value = sum(card_value(card) for card in cards)
+    # Adjust for Aces
+    aces = sum(1 for card in cards if card[:-1] == 'A')
+    while value > 21 and aces:
+        value -= 10
+        aces -= 1
+    return value
+
+def dealerhits(dealer_cards):
+    # Dealer hits until reaching 17 or more
+    while hand_value(dealer_cards) < 17:
+        new_card = deck.draw_card()
+        dealer_cards.append(new_card)
+        print(f"Dealer draws a card: {new_card}. Dealer's cards: {', '.join(dealer_cards)}")
+    print(f"Dealer stands with: {', '.join(dealer_cards)} (Value: {hand_value(dealer_cards)})")
+    return dealer_cards
+
+while True:
+    (player_cards, bet) = gamestart()
+    dcard1, dcard2 = dealer()
+    dealer_cards = [dcard1, dcard2]
+
+    # Check for player blackjack
+    player_blackjack = hand_value(player_cards) == 21 and len(player_cards) == 2
+    dealer_blackjack = hand_value(dealer_cards) == 21 and len(dealer_cards) == 2
+
+    if player_blackjack and dealer_blackjack:
+        print(f"Both you and the dealer have blackjack! It's a tie.")
+        print(f"Your hand: {', '.join(player_cards)} (Value: 21)")
+        print(f"Dealer's hand: {', '.join(dealer_cards)} (Value: 21)")
+    elif player_blackjack:
+        print(f"Blackjack! You win 1.5x your bet!")
+        print(f"Your hand: {', '.join(player_cards)} (Value: 21)")
+        player_cash.win(int(1.5 * bet))
+    elif dealer_blackjack:
+        print(f"Dealer has blackjack! Dealer wins.")
+        print(f"Dealer's hand: {', '.join(dealer_cards)} (Value: 21)")
+        player_cash.lose(bet)
     else:
+        userinputs(player_cards)
+        player_total = hand_value(player_cards)
+        dealerhits(dealer_cards)
+        dealer_total = hand_value(dealer_cards)
+
+        print(f"Your hand: {', '.join(player_cards)} (Value: {player_total})")
+        print(f"Dealer's hand: {', '.join(dealer_cards)} (Value: {dealer_total})")
+
+        if player_total > 21:
+            print("You busted! Dealer wins.")
+            player_cash.lose(bet)
+        elif dealer_total > 21 or player_total > dealer_total:
+            print("You win!")
+            player_cash.win(bet)
+        elif player_total < dealer_total:
+            print("Dealer wins!")
+            player_cash.lose(bet)
+        else:
+            print("It's a tie!")
+
+    print(f"Your balance: {player_cash.get_balance()}")
+    if player_cash.get_balance() <= 0:
+        print("You are out of money! Game over.")
+        break
+
+    play_again = input("Play another round? (y/n): ").strip().lower()
+    if play_again != "y":
         print("Thanks for playing!")
-        pass
-
-
-game_start()
+        break
